@@ -1,10 +1,10 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/23prime/gh-check-unpinned/internal/checker"
 	"github.com/cli/go-gh/v2/pkg/api"
@@ -19,11 +19,12 @@ var (
 func main() {
 	includeArchived := flag.Bool("include-archived", false, "Include archived repositories")
 	includeForks := flag.Bool("include-forks", false, "Include forked repositories")
+	jsonOutput := flag.Bool("json", false, "Output findings as JSON")
 	flag.Parse()
 
 	args := flag.Args()
 	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] [--include-forks] <owner>")
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] [--include-forks] [--json] <owner>")
 		os.Exit(1)
 	}
 	owner := args[0]
@@ -42,6 +43,7 @@ func main() {
 		os.Exit(1)
 	}
 
+	var allFindings []checker.Finding
 	foundAny := false
 	checkedAny := false
 	for _, r := range repos {
@@ -58,10 +60,28 @@ func main() {
 				Foreground(stderr.Color("3")).String())
 			continue
 		}
-		for _, f := range findings {
-			fmt.Println(colorFinding(f))
-			foundAny = true
+		if *jsonOutput {
+			allFindings = append(allFindings, findings...)
+		} else {
+			for _, f := range findings {
+				fmt.Println(colorFinding(f))
+				foundAny = true
+			}
 		}
+	}
+
+	if *jsonOutput {
+		out := allFindings
+		if out == nil {
+			out = []checker.Finding{}
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(out); err != nil {
+			fmt.Fprintln(os.Stderr, "error: failed to encode JSON:", err)
+			os.Exit(1)
+		}
+		return
 	}
 
 	if !checkedAny {
@@ -84,14 +104,12 @@ func main() {
 	}
 }
 
-// colorFinding colors a finding line "owner/repo/path: action@ref".
+// colorFinding colors a finding as "owner/repo/path: action@ref".
 // The path prefix is rendered faint; the unpinned action is bold red.
-func colorFinding(line string) string {
-	parts := strings.SplitN(line, ": ", 2)
-	if len(parts) != 2 {
-		return line
-	}
-	path := stdout.String(parts[0] + ": ").Faint().String()
-	action := stdout.String(parts[1]).Foreground(stdout.Color("9")).Bold().String()
+func colorFinding(f checker.Finding) string {
+	prefix := f.Repo + "/" + f.Workflow + ": "
+	path := stdout.String(prefix).Faint().String()
+	action := stdout.String(f.Action).Foreground(stdout.Color("9")).Bold().String()
 	return path + action
 }
+

@@ -24,6 +24,13 @@ type RepoInfo struct {
 	Fork     bool   `json:"fork"`
 }
 
+// Finding represents a single unpinned action reference.
+type Finding struct {
+	Repo     string `json:"repo"`
+	Workflow string `json:"workflow"`
+	Action   string `json:"action"`
+}
+
 type contentEntry struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
@@ -89,7 +96,7 @@ func (c *Checker) listRepoPages(pathFmt, owner string) ([]RepoInfo, error) {
 }
 
 // CheckRepo returns unpinned action references found in the repository's workflows.
-func (c *Checker) CheckRepo(owner, repo string) ([]string, error) {
+func (c *Checker) CheckRepo(owner, repo string) ([]Finding, error) {
 	var entries []contentEntry
 	err := c.client.Get(fmt.Sprintf("repos/%s/%s/contents/.github/workflows", owner, repo), &entries)
 	if err != nil {
@@ -100,7 +107,7 @@ func (c *Checker) CheckRepo(owner, repo string) ([]string, error) {
 		return nil, err
 	}
 
-	var results []string
+	var results []Finding
 	for _, e := range entries {
 		if e.Type != "file" {
 			continue
@@ -113,7 +120,11 @@ func (c *Checker) CheckRepo(owner, repo string) ([]string, error) {
 			return nil, fmt.Errorf("%s: %w", e.Path, err)
 		}
 		for _, u := range unpinned {
-			results = append(results, fmt.Sprintf("%s/%s/%s: %s", owner, repo, e.Path, u))
+			results = append(results, Finding{
+				Repo:     fmt.Sprintf("%s/%s", owner, repo),
+				Workflow: e.Path,
+				Action:   u,
+			})
 		}
 	}
 	return results, nil
