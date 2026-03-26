@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,11 +10,15 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned <owner>")
+	includeArchived := flag.Bool("include-archived", false, "Include archived repositories")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) != 1 {
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] <owner>")
 		os.Exit(1)
 	}
-	owner := os.Args[1]
+	owner := args[0]
 
 	client, err := api.DefaultRESTClient()
 	if err != nil {
@@ -21,15 +26,22 @@ func main() {
 		os.Exit(1)
 	}
 
-	repos, err := checker.ListRepos(client, owner)
+	ch := checker.New(client)
+
+	repos, err := ch.ListRepos(owner)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to list repos for %q: %v\n", owner, err)
 		os.Exit(1)
 	}
 
 	foundAny := false
+	checkedAny := false
 	for _, r := range repos {
-		findings, err := checker.CheckRepo(client, owner, r.Name)
+		if r.Archived && !*includeArchived {
+			continue
+		}
+		checkedAny = true
+		findings, err := ch.CheckRepo(owner, r.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
 			continue
@@ -40,7 +52,9 @@ func main() {
 		}
 	}
 
-	if !foundAny {
+	if !checkedAny {
+		fmt.Println("No repositories checked (all repositories are archived; use --include-archived to include them).")
+	} else if !foundAny {
 		fmt.Println("All actions are SHA-pinned.")
 	}
 }

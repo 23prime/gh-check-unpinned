@@ -12,9 +12,15 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// RESTClient is the interface for making GitHub REST API calls.
+type RESTClient interface {
+	Get(path string, response any) error
+}
+
 // RepoInfo holds basic repository information.
 type RepoInfo struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Archived bool   `json:"archived"`
 }
 
 type contentEntry struct {
@@ -42,22 +48,49 @@ type stepDef struct {
 
 var shaRe = regexp.MustCompile(`@[0-9a-f]{40}$`)
 
+// Checker performs unpinned action checks against GitHub repositories.
+type Checker struct {
+	client RESTClient
+}
+
+// New creates a new Checker with the given REST client.
+func New(client RESTClient) *Checker {
+	return &Checker{client: client}
+}
+
 // ListRepos returns repositories under the given owner (org or user).
-func ListRepos(client *api.RESTClient, owner string) ([]RepoInfo, error) {
-	var repos []RepoInfo
-	if err := client.Get(fmt.Sprintf("orgs/%s/repos?per_page=100", owner), &repos); err == nil {
-		return repos, nil
-	}
-	if err := client.Get(fmt.Sprintf("users/%s/repos?per_page=100", owner), &repos); err != nil {
-		return nil, err
+func (c *Checker) ListRepos(owner string) ([]RepoInfo, error) {
+	repos, err := c.listRepoPages("orgs/%s/repos", owner)
+	if err != nil {
+		var httpErr *api.HTTPError
+		if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusNotFound {
+			return nil, err
+		}
+		return c.listRepoPages("users/%s/repos", owner)
 	}
 	return repos, nil
 }
 
+func (c *Checker) listRepoPages(pathFmt, owner string) ([]RepoInfo, error) {
+	var all []RepoInfo
+	for page := 1; ; page++ {
+		var pageRepos []RepoInfo
+		path := fmt.Sprintf(pathFmt+"?per_page=100&page=%d", owner, page)
+		if err := c.client.Get(path, &pageRepos); err != nil {
+			return nil, err
+		}
+		all = append(all, pageRepos...)
+		if len(pageRepos) < 100 {
+			break
+		}
+	}
+	return all, nil
+}
+
 // CheckRepo returns unpinned action references found in the repository's workflows.
-func CheckRepo(client *api.RESTClient, owner, repo string) ([]string, error) {
+func (c *Checker) CheckRepo(owner, repo string) ([]string, error) {
 	var entries []contentEntry
-	err := client.Get(fmt.Sprintf("repos/%s/%s/contents/.github/workflows", owner, repo), &entries)
+	err := c.client.Get(fmt.Sprintf("repos/%s/%s/contents/.github/workflows", owner, repo), &entries)
 	if err != nil {
 		var httpErr *api.HTTPError
 		if errors.As(err, &httpErr) && httpErr.StatusCode == http.StatusNotFound {
@@ -74,7 +107,7 @@ func CheckRepo(client *api.RESTClient, owner, repo string) ([]string, error) {
 		if !strings.HasSuffix(e.Name, ".yml") && !strings.HasSuffix(e.Name, ".yaml") {
 			continue
 		}
-		unpinned, err := findUnpinned(client, owner, repo, e.Path)
+		unpinned, err := c.findUnpinned(owner, repo, e.Path)
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", e.Path, err)
 		}
@@ -85,9 +118,9 @@ func CheckRepo(client *api.RESTClient, owner, repo string) ([]string, error) {
 	return results, nil
 }
 
-func findUnpinned(client *api.RESTClient, owner, repo, path string) ([]string, error) {
+func (c *Checker) findUnpinned(owner, repo, path string) ([]string, error) {
 	var fc fileContent
-	if err := client.Get(fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path), &fc); err != nil {
+	if err := c.client.Get(fmt.Sprintf("repos/%s/%s/contents/%s", owner, repo, path), &fc); err != nil {
 		return nil, err
 	}
 
