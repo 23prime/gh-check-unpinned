@@ -3,6 +3,7 @@ package checker_test
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"testing"
 
@@ -197,5 +198,110 @@ jobs:
 	}
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding for unpinned reusable workflow, got %d", len(findings))
+	}
+}
+
+func TestCheckRepo_SkipsDirectoryEntries(t *testing.T) {
+	mock := newMock(map[string]any{
+		"repos/owner/repo/contents/.github/workflows": []map[string]any{
+			{"name": "subdir", "path": ".github/workflows/subdir", "type": "dir"},
+		},
+	}, nil)
+
+	findings, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("expected no findings for directory entry, got %v", findings)
+	}
+}
+
+func TestCheckRepo_SkipsNonYAMLFiles(t *testing.T) {
+	mock := newMock(map[string]any{
+		"repos/owner/repo/contents/.github/workflows": []map[string]any{
+			{"name": "README.md", "path": ".github/workflows/README.md", "type": "file"},
+		},
+	}, nil)
+
+	findings, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Errorf("expected no findings for non-YAML file, got %v", findings)
+	}
+}
+
+func TestCheckRepo_WorkflowsDirError(t *testing.T) {
+	serverErr := &api.HTTPError{StatusCode: http.StatusInternalServerError}
+	mock := newMock(nil, map[string]error{
+		"repos/owner/repo/contents/.github/workflows": serverErr,
+	})
+
+	_, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCheckRepo_FileContentError(t *testing.T) {
+	fetchErr := errors.New("network error")
+	mock := newMock(map[string]any{
+		"repos/owner/repo/contents/.github/workflows": []map[string]any{
+			{"name": "ci.yml", "path": ".github/workflows/ci.yml", "type": "file"},
+		},
+	}, map[string]error{
+		"repos/owner/repo/contents/.github/workflows/ci.yml": fetchErr,
+	})
+
+	_, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestCheckRepo_InvalidBase64(t *testing.T) {
+	mock := newMock(map[string]any{
+		"repos/owner/repo/contents/.github/workflows": []map[string]any{
+			{"name": "ci.yml", "path": ".github/workflows/ci.yml", "type": "file"},
+		},
+		"repos/owner/repo/contents/.github/workflows/ci.yml": map[string]any{
+			"content": "!!!not-valid-base64!!!",
+		},
+	}, nil)
+
+	_, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err == nil {
+		t.Fatal("expected error for invalid base64, got nil")
+	}
+}
+
+func TestCheckRepo_InvalidYAML(t *testing.T) {
+	mock := newMock(map[string]any{
+		"repos/owner/repo/contents/.github/workflows": []map[string]any{
+			{"name": "ci.yml", "path": ".github/workflows/ci.yml", "type": "file"},
+		},
+		"repos/owner/repo/contents/.github/workflows/ci.yml": map[string]any{
+			"content": encodeWorkflow("jobs: [invalid: yaml"),
+		},
+	}, nil)
+
+	_, err := checker.New(mock).CheckRepo("owner", "repo")
+	if err == nil {
+		t.Fatal("expected error for invalid YAML, got nil")
+	}
+}
+
+func TestListRepos_BothEndpointsFail(t *testing.T) {
+	apiErr := &api.HTTPError{StatusCode: http.StatusUnauthorized}
+	mock := newMock(nil, map[string]error{
+		"orgs/owner/repos?per_page=100":  apiErr,
+		"users/owner/repos?per_page=100": apiErr,
+	})
+
+	_, err := checker.New(mock).ListRepos("owner")
+	if err == nil {
+		t.Fatal("expected error when both endpoints fail, got nil")
 	}
 }
