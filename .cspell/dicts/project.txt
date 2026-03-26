@@ -28,6 +28,8 @@ staticcheck
 trimpath
 unconvert
 usestdlibvars
+esac
+pipefail
 henvic
 httpretty
 isatty

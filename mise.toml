@@ -115,3 +115,8 @@ run = "./bin/gh-check-unpinned"
 [tasks.go-clean]
 description = "Clean build artifacts"
 run = ["go clean", "rm -rf bin/", "rm -f coverage.out coverage.html"]
+
+# Release
+[tasks.tag-push]
+description = "Push release tags to remote"
+run = "git push --follow-tags"

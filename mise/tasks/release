@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+#MISE description="Bump version and create release tag (usage: mise run release -- <major|minor|patch>)"
+set -euo pipefail
+
+# Parse bump level argument
+level="${1:-}"
+if [ -z "$level" ]; then
+  printf "Usage: mise run release -- <major|minor|patch>\n" >&2
+  exit 1
+fi
+
+case "$level" in
+  major|minor|patch) ;;
+  *)
+    printf "[ERROR] Invalid bump level '%s'. Must be one of: major, minor, patch\n" "$level" >&2
+    exit 1
+    ;;
+esac
+
+# Get current version from latest git tag (default to v0.0.0 if no tags exist)
+current_tag=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+current_version="${current_tag#v}"
+
+# Compute next version from bump level
+IFS='.' read -r major minor patch <<< "$current_version"
+case "$level" in
+  major) major=$((major + 1)); minor=0; patch=0 ;;
+  minor) minor=$((minor + 1)); patch=0 ;;
+  patch) patch=$((patch + 1)) ;;
+esac
+next_version="${major}.${minor}.${patch}"
+tag="v${next_version}"
+
+# Check if tag already exists
+if git rev-parse "$tag" >/dev/null 2>&1; then
+  printf "[ERROR] Tag '%s' already exists\n" "$tag" >&2
+  exit 1
+fi
+
+# Confirm
+printf "Bump version from %s to %s? [y/N] " "$current_tag" "$tag"
+read -r answer
+if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+  printf "Aborted.\n"
+  exit 0
+fi
+
+# Create annotated tag
+printf "Creating release tag: %s\n" "$tag"
+git tag -a "$tag" -m "Release ${tag}"
+
+printf "Tag '%s' created successfully\n" "$tag"
+printf "To push, run: mise run tag-push\n"
