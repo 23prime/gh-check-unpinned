@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 
@@ -9,11 +10,15 @@ import (
 )
 
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned <owner>")
+	includeArchived := flag.Bool("include-archived", false, "Include archived repositories")
+	flag.Parse()
+
+	args := flag.Args()
+	if len(args) < 1 {
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] <owner>")
 		os.Exit(1)
 	}
-	owner := os.Args[1]
+	owner := args[0]
 
 	client, err := api.DefaultRESTClient()
 	if err != nil {
@@ -29,6 +34,9 @@ func main() {
 
 	foundAny := false
 	for _, r := range repos {
+		if r.Archived && !*includeArchived {
+			continue
+		}
 		findings, err := checker.CheckRepo(client, owner, r.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)

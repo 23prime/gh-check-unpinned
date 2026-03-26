@@ -14,7 +14,8 @@ import (
 
 // RepoInfo holds basic repository information.
 type RepoInfo struct {
-	Name string `json:"name"`
+	Name     string `json:"name"`
+	Archived bool   `json:"archived"`
 }
 
 type contentEntry struct {
