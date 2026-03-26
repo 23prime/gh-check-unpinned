@@ -4,6 +4,7 @@
     "GitHub.vscode-github-actions",
     "zizmor.zizmor-vscode",
     "EditorConfig.EditorConfig",
-    "DavidAnson.vscode-markdownlint"
+    "DavidAnson.vscode-markdownlint",
+    "golang.Go"
   ]
 }

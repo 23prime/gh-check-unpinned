@@ -2,6 +2,19 @@
   // Markdown
   "[markdown]": {
     "editor.formatOnSave": true,
-    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint"
-  }
+    "editor.defaultFormatter": "DavidAnson.vscode-markdownlint",
+  },
+
+  // Go
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "golang.Go",
+  },
+  "go.lintTool": "golangci-lint",
+  "go.lintFlags": ["--path-mode=abs", "--fast-only"],
+  "go.formatTool": "custom",
+  "go.alternateTools": {
+    "customFormatter": "golangci-lint",
+  },
+  "go.formatFlags": ["fmt", "--stdin"],
 }

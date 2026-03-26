@@ -1,88 +1,37 @@
-# Development Template with mise
+# gh-check-unpinned
 
-A Template for development with [mise](https://mise.jdx.dev).
+This GitHub CLI extension detects the use of actions in the workflow of repositories under a specific owner (user or organization) that are not SHA-pinned.
 
-## Getting started
+## Install extension
 
-### Using setup script
+```sh
+gh extension install 23prime/gh-check-unpinned
+```
 
-1. Create new remote repository on GitHub.
+## Usage
 
-2. Run the setup script.
+## Development
 
-    ```bash
-    curl -fsSL https://raw.githubusercontent.com/23prime/mise-template/main/setup.sh | bash -s -- <new-remote-url> [new-repo-name]
+### Pre requirements
+
+- [mise](https://mise.jdx.dev).
+
+### Get start development
+
+1. Setup project.
+
+    ```sh
+    mise run setup
     ```
 
-    - `<new-remote-url>` — remote URL of the pre-created repository
-    - `[new-repo-name]` — optional; defaults to the repository name derived from the URL
+2. Run application.
 
-### Manual steps
+   ```sh
+   mise run go-run
+   ```
 
-1. Create new remote repository on GitHub.
+3. Check project.
 
-2. Clone this repository.
-
-    ```bash
-    git clone git@github.com:23prime/mise-template.git
-    ```
-
-3. Copy the cloned repository to anywhere.
-
-    ```bash
-    cp -ar mise-template <new-repo-path>
-    ```
-
-4. Into new repository.
-
-    ```bash
-    cd <new-repo-path>
-    ```
-
-5. Rename remote repository to `upstream`.
-
-    ```bash
-    git remote rename origin upstream
-    ```
-
-6. Add new remote repository as `origin`.
-
-    ```bash
-    git remote add origin <new-remote-url>
-    ```
-
-7. Check remote repositories.
-
-    ```bash
-    $ git remote -v
-    origin  <new-remote-url> (fetch)
-    origin  <new-remote-url> (push)
-    upstream        git@github.com:23prime/mise-template.git (fetch)
-    upstream        git@github.com:23prime/mise-template.git (push)
-    ```
-
-8. Push to `origin`.
-
-    ```bash
-    git push -u origin main
-    ```
-
-9. If you use GitHub CLI, set the default repository.
-
-    ```bash
-    gh repo set-default <new-repo-name>
-    ```
-
-## Merge from upstream
-
-1. Fetch upstream changes.
-
-    ```bash
-    git fetch upstream
-    ```
-
-2. Merge.
-
-    ```bash
-    git merge upstream/main
+    ```sh
+    mise run check
     ```

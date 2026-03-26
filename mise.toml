@@ -22,6 +22,11 @@ lefthook = "latest"
 cspell = "latest"
 "github:zizmorcore/zizmor" = "latest"
 
+# Go
+go = "1.25"
+golangci-lint = "2"
+"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+
 
 # ================================================================
 # Tasks
@@ -76,3 +81,37 @@ alias = "ghc"
 description = "Check spelling"
 run = "cspell . --gitignore --verbose"
 alias = "sc"
+
+# Go
+[tasks.go-fix]
+description = "Run golangci-lint auto-fix (formatting and lint fixes)"
+run = "golangci-lint run --fix"
+
+[tasks.go-check]
+description = "Run vulnerability scan, linter, and unit tests"
+run = [{ task = "go-vuln" }, { task = "go-lint" }, { task = "go-test" }]
+
+[tasks.go-test]
+description = "Run tests"
+run = "go test -v ./..."
+
+[tasks.go-lint]
+description = "Run golangci-lint"
+run = "golangci-lint run"
+
+[tasks.go-vuln]
+description = "Check for vulnerabilities in dependencies"
+run = "govulncheck ./..."
+
+[tasks.go-build]
+description = "Build the application"
+run = "go build -o bin/gh-check-unpinned ."
+
+[tasks.go-run]
+description = "Build and run the application"
+depends = ["go-build"]
+run = "./bin/gh-check-unpinned"
+
+[tasks.go-clean]
+description = "Clean build artifacts"
+run = ["go clean", "rm -rf bin/", "rm -f coverage.out coverage.html"]
