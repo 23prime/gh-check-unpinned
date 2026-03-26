@@ -14,7 +14,7 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	if len(args) < 1 {
+	if len(args) != 1 {
 		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] <owner>")
 		os.Exit(1)
 	}
