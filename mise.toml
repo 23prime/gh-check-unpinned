@@ -105,7 +105,7 @@ run = "govulncheck ./..."
 
 [tasks.go-build]
 description = "Build the application"
-run = "go build -o bin/gh-check-unpinned ."
+run = "go build -o bin/gh-check-unpinned ./cmd/gh-check-unpinned"
 
 [tasks.go-run]
 description = "Build and run the application"

@@ -1,4 +1,4 @@
-package main
+package checker
 
 import (
 	"encoding/base64"
@@ -12,7 +12,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-type repoInfo struct {
+// RepoInfo holds basic repository information.
+type RepoInfo struct {
 	Name string `json:"name"`
 }
 
@@ -41,8 +42,9 @@ type stepDef struct {
 
 var shaRe = regexp.MustCompile(`@[0-9a-f]{40}$`)
 
-func listRepos(client *api.RESTClient, owner string) ([]repoInfo, error) {
-	var repos []repoInfo
+// ListRepos returns repositories under the given owner (org or user).
+func ListRepos(client *api.RESTClient, owner string) ([]RepoInfo, error) {
+	var repos []RepoInfo
 	if err := client.Get(fmt.Sprintf("orgs/%s/repos?per_page=100", owner), &repos); err == nil {
 		return repos, nil
 	}
@@ -52,7 +54,8 @@ func listRepos(client *api.RESTClient, owner string) ([]repoInfo, error) {
 	return repos, nil
 }
 
-func checkRepo(client *api.RESTClient, owner, repo string) ([]string, error) {
+// CheckRepo returns unpinned action references found in the repository's workflows.
+func CheckRepo(client *api.RESTClient, owner, repo string) ([]string, error) {
 	var entries []contentEntry
 	err := client.Get(fmt.Sprintf("repos/%s/%s/contents/.github/workflows", owner, repo), &entries)
 	if err != nil {

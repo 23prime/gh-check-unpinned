@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/23prime/gh-check-unpinned/internal/checker"
 	"github.com/cli/go-gh/v2/pkg/api"
 )
 
@@ -20,7 +21,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	repos, err := listRepos(client, owner)
+	repos, err := checker.ListRepos(client, owner)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to list repos for %q: %v\n", owner, err)
 		os.Exit(1)
@@ -28,7 +29,7 @@ func main() {
 
 	foundAny := false
 	for _, r := range repos {
-		findings, err := checkRepo(client, owner, r.Name)
+		findings, err := checker.CheckRepo(client, owner, r.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
 			continue

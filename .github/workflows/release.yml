@@ -21,3 +21,4 @@ jobs:
         with:
           generate_attestations: true
           go_version_file: go.mod
+          go_build_path: ./cmd/gh-check-unpinned
