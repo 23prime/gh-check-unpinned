@@ -65,7 +65,19 @@ func main() {
 	}
 
 	if !checkedAny {
-		msg := "No repositories checked (all repositories are archived; use --include-archived to include them)."
+		var msg string
+		switch {
+		case len(repos) == 0:
+			msg = "No repositories found."
+		case !*includeArchived && !*includeForks:
+			msg = "No repositories checked (all repositories are archived and/or forked; use --include-archived and/or --include-forks to include them)."
+		case !*includeArchived:
+			msg = "No repositories checked (all repositories are archived; use --include-archived to include them)."
+		case !*includeForks:
+			msg = "No repositories checked (all repositories are forked; use --include-forks to include them)."
+		default:
+			msg = "No repositories checked."
+		}
 		fmt.Println(stdout.String(msg).Foreground(stdout.Color("3")).String())
 	} else if !foundAny {
 		fmt.Println(stdout.String("All actions are SHA-pinned.").Foreground(stdout.Color("2")).String())
