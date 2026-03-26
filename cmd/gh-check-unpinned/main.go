@@ -26,7 +26,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	repos, err := checker.ListRepos(client, owner)
+	ch := checker.New(client)
+
+	repos, err := ch.ListRepos(owner)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: failed to list repos for %q: %v\n", owner, err)
 		os.Exit(1)
@@ -37,7 +39,7 @@ func main() {
 		if r.Archived && !*includeArchived {
 			continue
 		}
-		findings, err := checker.CheckRepo(client, owner, r.Name)
+		findings, err := ch.CheckRepo(owner, r.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
 			continue

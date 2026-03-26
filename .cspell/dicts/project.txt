@@ -18,7 +18,9 @@ govulncheck
 govet
 ldflags
 manifoldco
+myorg
 myproject
+myuser
 nolint
 nosec
 promptui
