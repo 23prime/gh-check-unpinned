@@ -18,12 +18,13 @@ var (
 
 func main() {
 	includeArchived := flag.Bool("include-archived", false, "Include archived repositories")
+	includeForks := flag.Bool("include-forks", false, "Include forked repositories")
 	jsonOutput := flag.Bool("json", false, "Output findings as JSON")
 	flag.Parse()
 
 	args := flag.Args()
 	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] [--json] <owner>")
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] [--include-forks] [--json] <owner>")
 		os.Exit(1)
 	}
 	owner := args[0]
@@ -46,6 +47,9 @@ func main() {
 	checkedAny := false
 	for _, r := range repos {
 		if r.Archived && !*includeArchived {
+			continue
+		}
+		if r.Fork && !*includeForks {
 			continue
 		}
 		checkedAny = true
@@ -73,7 +77,19 @@ func main() {
 	}
 
 	if !checkedAny {
-		msg := "No repositories checked (all repositories are archived; use --include-archived to include them)."
+		var msg string
+		switch {
+		case len(repos) == 0:
+			msg = "No repositories found."
+		case !*includeArchived && !*includeForks:
+			msg = "No repositories checked (all repositories are archived and/or forked; use --include-archived and/or --include-forks to include them)."
+		case !*includeArchived:
+			msg = "No repositories checked (all repositories are archived; use --include-archived to include them)."
+		case !*includeForks:
+			msg = "No repositories checked (all repositories are forked; use --include-forks to include them)."
+		default:
+			msg = "No repositories checked."
+		}
 		fmt.Println(stdout.String(msg).Foreground(stdout.Color("3")).String())
 	} else if len(allFindings) == 0 {
 		fmt.Println(stdout.String("All actions are SHA-pinned.").Foreground(stdout.Color("2")).String())

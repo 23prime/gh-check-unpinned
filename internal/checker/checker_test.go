@@ -48,8 +48,9 @@ func encodeWorkflow(yaml string) string {
 func TestListRepos_Org(t *testing.T) {
 	mock := newMock(map[string]any{
 		"orgs/myorg/repos?per_page=100&page=1": []map[string]any{
-			{"name": "repo-a", "archived": false},
-			{"name": "repo-b", "archived": true},
+			{"name": "repo-a", "archived": false, "fork": false},
+			{"name": "repo-b", "archived": true, "fork": false},
+			{"name": "repo-c", "archived": false, "fork": true},
 		},
 	}, nil)
 
@@ -57,11 +58,14 @@ func TestListRepos_Org(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(repos) != 2 {
-		t.Fatalf("expected 2 repos, got %d", len(repos))
+	if len(repos) != 3 {
+		t.Fatalf("expected 3 repos, got %d", len(repos))
 	}
 	if repos[1].Archived != true {
 		t.Errorf("expected repo-b to be archived")
+	}
+	if repos[2].Fork != true {
+		t.Errorf("expected repo-c to be a fork")
 	}
 }
 
