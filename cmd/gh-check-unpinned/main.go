@@ -35,10 +35,12 @@ func main() {
 	}
 
 	foundAny := false
+	checkedAny := false
 	for _, r := range repos {
 		if r.Archived && !*includeArchived {
 			continue
 		}
+		checkedAny = true
 		findings, err := ch.CheckRepo(owner, r.Name)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
@@ -50,7 +52,9 @@ func main() {
 		}
 	}
 
-	if !foundAny {
+	if !checkedAny {
+		fmt.Println("No repositories checked (all repositories are archived; use --include-archived to include them).")
+	} else if !foundAny {
 		fmt.Println("All actions are SHA-pinned.")
 	}
 }
