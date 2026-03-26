@@ -121,9 +121,9 @@ jobs:
 	if len(findings) != 1 {
 		t.Fatalf("expected 1 finding, got %d: %v", len(findings), findings)
 	}
-	expected := "owner/repo/.github/workflows/ci.yml: actions/checkout@v4"
-	if findings[0] != expected {
-		t.Errorf("expected %q, got %q", expected, findings[0])
+	f := findings[0]
+	if f.Repo != "owner/repo" || f.Workflow != ".github/workflows/ci.yml" || f.Action != "actions/checkout@v4" {
+		t.Errorf("unexpected finding: %+v", f)
 	}
 }
 
