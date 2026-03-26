@@ -18,11 +18,12 @@ var (
 
 func main() {
 	includeArchived := flag.Bool("include-archived", false, "Include archived repositories")
+	includeForks := flag.Bool("include-forks", false, "Include forked repositories")
 	flag.Parse()
 
 	args := flag.Args()
 	if len(args) != 1 {
-		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] <owner>")
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned [--include-archived] [--include-forks] <owner>")
 		os.Exit(1)
 	}
 	owner := args[0]
@@ -45,6 +46,9 @@ func main() {
 	checkedAny := false
 	for _, r := range repos {
 		if r.Archived && !*includeArchived {
+			continue
+		}
+		if r.Fork && !*includeForks {
 			continue
 		}
 		checkedAny = true
