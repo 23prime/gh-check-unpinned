@@ -44,6 +44,7 @@ func main() {
 	}
 
 	var allFindings []checker.Finding
+	foundAny := false
 	checkedAny := false
 	for _, r := range repos {
 		if r.Archived && !*includeArchived {
@@ -59,7 +60,14 @@ func main() {
 				Foreground(stderr.Color("3")).String())
 			continue
 		}
-		allFindings = append(allFindings, findings...)
+		if *jsonOutput {
+			allFindings = append(allFindings, findings...)
+		} else {
+			for _, f := range findings {
+				fmt.Println(colorFinding(f))
+				foundAny = true
+			}
+		}
 	}
 
 	if *jsonOutput {
@@ -91,12 +99,8 @@ func main() {
 			msg = "No repositories checked."
 		}
 		fmt.Println(stdout.String(msg).Foreground(stdout.Color("3")).String())
-	} else if len(allFindings) == 0 {
+	} else if !foundAny {
 		fmt.Println(stdout.String("All actions are SHA-pinned.").Foreground(stdout.Color("2")).String())
-	} else {
-		for _, f := range allFindings {
-			fmt.Println(colorFinding(f))
-		}
 	}
 }
 
