@@ -21,6 +21,7 @@ type RESTClient interface {
 type RepoInfo struct {
 	Name     string `json:"name"`
 	Archived bool   `json:"archived"`
+	Fork     bool   `json:"fork"`
 }
 
 type contentEntry struct {
