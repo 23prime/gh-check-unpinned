@@ -10,11 +10,26 @@ gh extension install 23prime/gh-check-unpinned
 
 ## Usage
 
+```sh
+gh check-unpinned <owner>
+```
+
+- `<owner>` — GitHub user or organization name (required)
+
+### Example
+
+```sh
+$ gh check-unpinned my-org
+my-org/some-repo/.github/workflows/ci.yml: actions/checkout@v4
+my-org/some-repo/.github/workflows/ci.yml: actions/setup-go@v5
+my-org/another-repo/.github/workflows/release.yml: actions/upload-artifact@v3
+```
+
 ## Development
 
 ### Pre requirements
 
-- [mise](https://mise.jdx.dev).
+- [mise](https://mise.jdx.dev)
 
 ### Get start development
 
