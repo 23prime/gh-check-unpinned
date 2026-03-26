@@ -60,17 +60,31 @@ func New(client RESTClient) *Checker {
 
 // ListRepos returns repositories under the given owner (org or user).
 func (c *Checker) ListRepos(owner string) ([]RepoInfo, error) {
-	var repos []RepoInfo
-	if err := c.client.Get(fmt.Sprintf("orgs/%s/repos?per_page=100", owner), &repos); err != nil {
+	repos, err := c.listRepoPages("orgs/%s/repos", owner)
+	if err != nil {
 		var httpErr *api.HTTPError
 		if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusNotFound {
 			return nil, err
 		}
-		if err := c.client.Get(fmt.Sprintf("users/%s/repos?per_page=100", owner), &repos); err != nil {
-			return nil, err
-		}
+		return c.listRepoPages("users/%s/repos", owner)
 	}
 	return repos, nil
+}
+
+func (c *Checker) listRepoPages(pathFmt, owner string) ([]RepoInfo, error) {
+	var all []RepoInfo
+	for page := 1; ; page++ {
+		var pageRepos []RepoInfo
+		path := fmt.Sprintf(pathFmt+"?per_page=100&page=%d", owner, page)
+		if err := c.client.Get(path, &pageRepos); err != nil {
+			return nil, err
+		}
+		all = append(all, pageRepos...)
+		if len(pageRepos) < 100 {
+			break
+		}
+	}
+	return all, nil
 }
 
 // CheckRepo returns unpinned action references found in the repository's workflows.

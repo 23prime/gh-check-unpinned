@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"testing"
 
@@ -46,7 +47,7 @@ func encodeWorkflow(yaml string) string {
 
 func TestListRepos_Org(t *testing.T) {
 	mock := newMock(map[string]any{
-		"orgs/myorg/repos?per_page=100": []map[string]any{
+		"orgs/myorg/repos?per_page=100&page=1": []map[string]any{
 			{"name": "repo-a", "archived": false},
 			{"name": "repo-b", "archived": true},
 		},
@@ -66,11 +67,11 @@ func TestListRepos_Org(t *testing.T) {
 
 func TestListRepos_UserFallback(t *testing.T) {
 	mock := newMock(map[string]any{
-		"users/myuser/repos?per_page=100": []map[string]any{
+		"users/myuser/repos?per_page=100&page=1": []map[string]any{
 			{"name": "repo-a", "archived": false},
 		},
 	}, map[string]error{
-		"orgs/myuser/repos?per_page=100": &api.HTTPError{StatusCode: http.StatusNotFound},
+		"orgs/myuser/repos?per_page=100&page=1": &api.HTTPError{StatusCode: http.StatusNotFound},
 	})
 
 	repos, err := checker.New(mock).ListRepos("myuser")
@@ -293,11 +294,32 @@ func TestCheckRepo_InvalidYAML(t *testing.T) {
 	}
 }
 
+func TestListRepos_Pagination(t *testing.T) {
+	page1 := make([]map[string]any, 100)
+	for i := range page1 {
+		page1[i] = map[string]any{"name": fmt.Sprintf("repo-%d", i), "archived": false}
+	}
+	mock := newMock(map[string]any{
+		"orgs/myorg/repos?per_page=100&page=1": page1,
+		"orgs/myorg/repos?per_page=100&page=2": []map[string]any{
+			{"name": "repo-100", "archived": false},
+		},
+	}, nil)
+
+	repos, err := checker.New(mock).ListRepos("myorg")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(repos) != 101 {
+		t.Errorf("expected 101 repos across 2 pages, got %d", len(repos))
+	}
+}
+
 func TestListRepos_BothEndpointsFail(t *testing.T) {
 	apiErr := &api.HTTPError{StatusCode: http.StatusUnauthorized}
 	mock := newMock(nil, map[string]error{
-		"orgs/owner/repos?per_page=100":  apiErr,
-		"users/owner/repos?per_page=100": apiErr,
+		"orgs/owner/repos?per_page=100&page=1":  apiErr,
+		"users/owner/repos?per_page=100&page=1": apiErr,
 	})
 
 	_, err := checker.New(mock).ListRepos("owner")
