@@ -4,9 +4,16 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/23prime/gh-check-unpinned/internal/checker"
 	"github.com/cli/go-gh/v2/pkg/api"
+	"github.com/muesli/termenv"
+)
+
+var (
+	stdout = termenv.NewOutput(os.Stdout)
+	stderr = termenv.NewOutput(os.Stderr)
 )
 
 func main() {
@@ -43,18 +50,32 @@ func main() {
 		checkedAny = true
 		findings, err := ch.CheckRepo(owner, r.Name)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
+			fmt.Fprintln(os.Stderr, stderr.String(fmt.Sprintf("warn: %s/%s: %v", owner, r.Name, err)).
+				Foreground(stderr.Color("3")).String())
 			continue
 		}
 		for _, f := range findings {
-			fmt.Println(f)
+			fmt.Println(colorFinding(f))
 			foundAny = true
 		}
 	}
 
 	if !checkedAny {
-		fmt.Println("No repositories checked (all repositories are archived; use --include-archived to include them).")
+		msg := "No repositories checked (all repositories are archived; use --include-archived to include them)."
+		fmt.Println(stdout.String(msg).Foreground(stdout.Color("3")).String())
 	} else if !foundAny {
-		fmt.Println("All actions are SHA-pinned.")
+		fmt.Println(stdout.String("All actions are SHA-pinned.").Foreground(stdout.Color("2")).String())
 	}
+}
+
+// colorFinding colors a finding line "owner/repo/path: action@ref".
+// The path prefix is rendered faint; the unpinned action is bold red.
+func colorFinding(line string) string {
+	parts := strings.SplitN(line, ": ", 2)
+	if len(parts) != 2 {
+		return line
+	}
+	path := stdout.String(parts[0] + ": ").Faint().String()
+	action := stdout.String(parts[1]).Foreground(stdout.Color("9")).Bold().String()
+	return path + action
 }
