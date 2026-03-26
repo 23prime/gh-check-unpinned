@@ -11,6 +11,10 @@ This file provides guidance to AI coding agents when working with code in this r
 - Always use `rm -f` (never bare `rm`)
 - Before running a series of `git` commands, confirm you are in the project root; if not, `cd` there first. Then run all subsequent `git` commands from that directory without the `-C` option.
 
+## Conventions
+
+Follow `docs/CONTRIBUTING.md` for commit messages, branch strategy, pull requests, and quality assurance rules.
+
 ## Project Overview
 
 <!-- Something -->
