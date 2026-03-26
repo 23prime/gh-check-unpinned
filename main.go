@@ -2,25 +2,44 @@ package main
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/cli/go-gh/v2/pkg/api"
 )
 
 func main() {
-	fmt.Println("hi world, this is the gh-check-unpinned extension!")
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Usage: gh check-unpinned <owner>")
+		os.Exit(1)
+	}
+	owner := os.Args[1]
+
 	client, err := api.DefaultRESTClient()
 	if err != nil {
-		fmt.Println(err)
-		return
+		fmt.Fprintln(os.Stderr, "error:", err)
+		os.Exit(1)
 	}
-	response := struct {Login string}{}
-	err = client.Get("user", &response)
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("running as %s\n", response.Login)
-}
 
-// For more examples of using go-gh, see:
-// https://github.com/cli/go-gh/blob/trunk/example_gh_test.go
+	repos, err := listRepos(client, owner)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: failed to list repos for %q: %v\n", owner, err)
+		os.Exit(1)
+	}
+
+	foundAny := false
+	for _, r := range repos {
+		findings, err := checkRepo(client, owner, r.Name)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: %s/%s: %v\n", owner, r.Name, err)
+			continue
+		}
+		for _, f := range findings {
+			fmt.Println(f)
+			foundAny = true
+		}
+	}
+
+	if !foundAny {
+		fmt.Println("All actions are SHA-pinned.")
+	}
+}
