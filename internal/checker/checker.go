@@ -61,11 +61,14 @@ func New(client RESTClient) *Checker {
 // ListRepos returns repositories under the given owner (org or user).
 func (c *Checker) ListRepos(owner string) ([]RepoInfo, error) {
 	var repos []RepoInfo
-	if err := c.client.Get(fmt.Sprintf("orgs/%s/repos?per_page=100", owner), &repos); err == nil {
-		return repos, nil
-	}
-	if err := c.client.Get(fmt.Sprintf("users/%s/repos?per_page=100", owner), &repos); err != nil {
-		return nil, err
+	if err := c.client.Get(fmt.Sprintf("orgs/%s/repos?per_page=100", owner), &repos); err != nil {
+		var httpErr *api.HTTPError
+		if !errors.As(err, &httpErr) || httpErr.StatusCode != http.StatusNotFound {
+			return nil, err
+		}
+		if err := c.client.Get(fmt.Sprintf("users/%s/repos?per_page=100", owner), &repos); err != nil {
+			return nil, err
+		}
 	}
 	return repos, nil
 }
