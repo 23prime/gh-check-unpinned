@@ -25,7 +25,7 @@ cspell = "9"
 # Go
 go = "1.25"
 golangci-lint = "2"
-"go:golang.org/x/vuln/cmd/govulncheck" = "latest"
+"go:golang.org/x/vuln/cmd/govulncheck" = "1"
 
 
 # ================================================================
