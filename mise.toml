@@ -31,7 +31,7 @@ cspell = "10"
 
 # Go
 go = "1.27.0"
-golangci-lint = "2"
+golangci-lint = "2.13.1"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1"
 
 
