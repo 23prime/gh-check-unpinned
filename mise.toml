@@ -30,7 +30,7 @@ betterleaks = "v1.8.1"
 cspell = "10"
 
 # Go
-go = "1.27.0"
+go = "1.27.1"
 golangci-lint = "2.13.2"
 "go:golang.org/x/vuln/cmd/govulncheck" = "1"
 
