@@ -3,7 +3,7 @@ module github.com/23prime/gh-check-unpinned
 go 1.25.8
 
 require (
-	github.com/cli/go-gh/v2 v2.15.0
+	github.com/cli/go-gh/v2 v2.16.0
 	github.com/muesli/termenv v0.16.0
 	gopkg.in/yaml.v3 v3.0.1
 )
