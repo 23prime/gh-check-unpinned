@@ -21,6 +21,7 @@ permissions: {}
 jobs:
   check:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -36,7 +37,7 @@ jobs:
         uses: jdx/mise-action@b44d12e7d0d8ee7461bb893e1b1993500433185b # v5.2.7
         with:
           install: true
-          install_args: "actionlint shellcheck zizmor"
+          install_args: "jactionlint shellcheck zizmor"
           cache: true
           github_token: ${{ secrets.GITHUB_TOKEN }}
         env:
