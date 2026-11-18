@@ -21,6 +21,6 @@ dictionaries:
 ignorePaths:
   - '.git'
   - '.vscode'
-  - '.mise'
+  - '.mise/locks'
   - 'node_modules'
   - 'go.sum'
